@@ -1,0 +1,52 @@
+pipeline {
+    agent {
+        label 'jenkins-agent1'
+    }
+
+    environment {
+        CREDENTIALS_ID ='rongeorge-gcp-trials-01'
+        BUCKET = 'rongeorge-gcp-trials-01-jenkins-training'
+        PATTERN = 'build/*'
+    }
+
+    tools {
+        nodejs 'node-tool'
+    }
+
+    stages {
+
+        stage('Initialize') {
+            steps {
+                sh '''
+                    npm install
+                '''
+            }
+        }
+
+        stage('Unit Tests') {
+            steps {
+                sh '''
+                    npm run test -- --watchAll=false
+                '''
+            }
+        }
+
+        stage('Build') {
+            steps {
+                sh '''
+                    npm run build
+                '''
+            }
+        }
+
+        stage('Move to GCS') {
+            steps{
+
+                step([$class: 'ClassicUploadStep',
+                    credentialsId: env.CREDENTIALS_ID, 
+                    bucket: "gs://${env.BUCKET}",
+                    pattern: env.PATTERN])
+            }
+        }
+    }
+}
